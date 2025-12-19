@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cache-Cache BLE - Flow Universe</title>
+
+<style>
+:root {
+  --ocean-blue: #2E5C8A;
+  --island-green: #4A7C59;
+  --snow-white: #F0F8FF;
+  --winter-ice: #B8E6F0;
+  --berry-red: #C41E3A;
+  --white: #FFFFFF;
+  --shadow: rgba(0, 0, 0, 0.2);
+  --dark-shadow: rgba(0, 0, 0, 0.3);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--ocean-blue);
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Timeline at top */
+.timeline {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  z-index: 100;
+}
+
+.timeline-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #1e5a8e;
+  border: 3px solid var(--white);
+  box-shadow: 0 2px 8px var(--shadow);
+  transition: all 0.3s ease;
+}
+
+.timeline-dot.active {
+  background: var(--island-green);
+  transform: scale(1.3);
+}
+
+.timeline-label {
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.timeline-line {
+  height: 3px;
+  width: 40px;
+  background: rgba(255, 255, 255, 0.3);
+  margin-bottom: 20px;
+}
+
+/* Control buttons on right */
+.controls {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 100;
+}
+
+.control-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--white);
+  border: none;
+  box-shadow: 0 4px 12px var(--shadow);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px var(--dark-shadow);
+}
+
+.control-btn:active {
+  transform: scale(0.95);
+}
+
+/* Bottom navigation */
+.bottom-nav {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 12px 24px;
+  border-radius: 32px;
+  backdrop-filter: blur(10px);
+  z-index: 100;
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: var(--white);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Map container with ocean background */
+.map-container {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  background: var(--ocean-blue);
+  overflow: hidden;
+}
+
+/* Decorative clouds */
+.cloud {
+  position: absolute;
+  background: var(--white);
+  border-radius: 100px;
+  opacity: 0.9;
+  animation: float 20s ease-in-out infinite;
+}
+
+.cloud::before,
+.cloud::after {
+  content: '';
+  position: absolute;
+  background: var(--white);
+  border-radius: 100px;
+}
+
+.cloud-1 {
+  width: 80px;
+  height: 30px;
+  top: 10%;
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.cloud-2 {
+  width: 60px;
+  height: 25px;
+  top: 15%;
+  right: 15%;
+  animation-delay: 3s;
+}
+
+.cloud-2::before {
+  width: 35px;
+  height: 35px;
+  top: -12px;
+  left: 8px;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+}
+
+/* Island styling for devices */
+.island {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--island-green);
+  box-shadow: 
+    0 8px 16px var(--shadow),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.island-device-1 {
+  width: 120px;
+  height: 120px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.island-device-2 {
+  width: 100px;
+  height: 100px;
+  z-index: 5;
+}
+
+.device-icon {
+  font-size: 36px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Trees scattered around */
+.tree {
+  position: absolute;
+  font-size: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  animation: sway 3s ease-in-out infinite;
+  z-index: 3;
+}
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+/* Info panel */
+.info-panel {
+  position: absolute;
+  top: 80px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px var(--shadow);
+  min-width: 200px;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.info-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.info-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.info-value {
+  font-weight: 700;
+  color: #333;
+  font-variant-numeric: tabular-nums;
+}
+
+.distance-large {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--ocean-blue);
+  text-align: center;
+  margin: 12px 0;
+}
+
+.distance-unit {
+  font-size: 18px;
+  color: #666;
+  margin-left: 4px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+  text-align: center;
+  width: 100%;
+}
+
+.start-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 200;
+  background: var(--white);
+  padding: 20px 40px;
+  border: none;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ocean-blue);
+  box-shadow: 0 8px 24px var(--dark-shadow);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.start-button:hover {
+  transform: translate(-50%, -50%) scale(1.05);
+  box-shadow: 0 12px 32px var(--dark-shadow);
+}
+
+.win-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  animation: fadeIn 0.5s ease;
+  backdrop-filter: blur(10px);
+}
+
+.win-message {
+  background: linear-gradient(135deg, var(--white) 0%, #f0f9ff 100%);
+  padding: 60px;
+  border-radius: 32px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  transform: scale(0.5);
+  animation: popIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  border: 3px solid var(--island-green);
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.5) rotate(-10deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.win-title {
+  font-size: 64px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--island-green) 0%, #7ED957 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 20px;
+  animation: bounce 0.8s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.win-subtitle {
+  font-size: 24px;
+  color: #555;
+  margin-bottom: 30px;
+  animation: fadeInUp 0.8s ease 0.3s backwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.win-stats {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  margin-top: 30px;
+  animation: fadeInUp 0.8s ease 0.5s backwards;
+}
+
+.win-stat {
+  text-align: center;
+}
+
+.win-stat-value {
+  font-size: 72px;
+  font-weight: 700;
+  color: var(--island-green);
+  text-shadow: 0 4px 20px rgba(126, 217, 87, 0.5);
+}
+
+/* Removed label styling as we don't use text labels */
+
+.target-found {
+  animation: targetFound 0.8s ease forwards;
+}
+
+@keyframes targetFound {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.5) rotate(0deg); }
+  50% { transform: scale(1.3) rotate(180deg); }
+  75% { transform: scale(1.6) rotate(360deg); }
+  100% { transform: scale(2) rotate(720deg); opacity: 0; }
+}
+
+/* Confetti and fireworks animations for victory */
+.confetti {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  background: var(--island-green);
+  animation: confetti-fall 3s ease-out forwards;
+  z-index: 400;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.firework {
+  position: fixed;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation: firework-explode 1s ease-out forwards;
+  z-index: 400;
+}
+
+@keyframes firework-explode {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Connection line between devices */
+.connection-line {
+  position: absolute;
+  height: 3px;
+  background: linear-gradient(90deg, 
+    var(--island-green), 
+    rgba(126, 217, 87, 0.3), 
+    var(--island-green));
+  transform-origin: left center;
+  z-index: 2;
+  opacity: 0.6;
+  animation: pulse-line 2s ease-in-out infinite;
+}
+
+@keyframes pulse-line {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Decorative island styling */
+.decorative-island {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--island-green);
+  box-shadow: 
+    0 8px 16px var(--shadow),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 8px;
+  z-index: 1;
+}
+
+/* Building styles for variety */
+.building {
+  font-size: 20px;
+  margin: 2px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.building-large {
+  font-size: 28px;
+}
+
+.building-small {
+  font-size: 16px;
+}
+
+/* Small decorative elements */
+.small-island {
+  width: 40px;
+  height: 40px;
+}
+
+.medium-island {
+  width: 80px;
+  height: 80px;
+}
+
+.large-island {
+  width: 140px;
+  height: 140px;
+}
+
+.xlarge-island {
+  width: 180px;
+  height: 180px;
+}
+
+/* Snowflake animation */
+@keyframes snowfall {
+  0% {
+    transform: translateY(-10px) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) translateX(50px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.snowflake {
+  position: absolute;
+  color: var(--snow-white);
+  font-size: 20px;
+  top: -20px;
+  z-index: 50;
+  animation: snowfall linear infinite;
+  pointer-events: none;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+}
+
+/* Frozen water effect */
+@keyframes ice-shimmer {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.ice-crystal {
+  position: absolute;
+  color: var(--winter-ice);
+  font-size: 16px;
+  z-index: 1;
+  animation: sparkle 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(184, 230, 240, 0.6));
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Winter berries decoration */
+.winter-berry {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--berry-red);
+  border-radius: 50%;
+  z-index: 4;
+  box-shadow: 0 0 6px var(--berry-red);
+}
+
+/* Enhanced responsive design for mobile, tablet, and desktop */
+@media (max-width: 768px) {
+  .timeline {
+    gap: 15px;
+    top: 10px;
+    flex-wrap: wrap;
+    max-width: 90vw;
+  }
+  
+  .timeline-dot {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--white);
+  }
+  
+  .timeline-label {
+    font-size: 9px;
+  }
+  
+  .timeline-line {
+    width: 20px;
+    margin-bottom: 15px;
+  }
+  
+  .info-panel {
+    left: 10px;
+    top: 60px;
+    padding: 12px;
+    min-width: 150px;
+    max-width: calc(100vw - 100px);
+  }
+  
+  .info-title {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  
+  .info-row {
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+  
+  .distance-large {
+    font-size: 28px;
+    margin: 8px 0;
+  }
+  
+  .distance-unit {
+    font-size: 14px;
+  }
+  
+  .status-badge {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  
+  .controls {
+    right: 10px;
+    gap: 12px;
+  }
+  
+  .control-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+  
+  .bottom-nav {
+    bottom: 15px;
+    padding: 8px 16px;
+    gap: 12px;
+  }
+  
+  .nav-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+  
+  .island-device-1 {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .island-device-2 {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .device-icon {
+    font-size: 28px;
+  }
+  
+  .decorative-island {
+    transform: scale(0.8);
+  }
+  
+  .tree {
+    font-size: 18px;
+  }
+  
+  .cloud-1, .cloud-2 {
+    transform: scale(0.7);
+  }
+  
+  .start-button {
+    padding: 16px 32px;
+    font-size: 16px;
+  }
+  
+  .win-message {
+    padding: 32px;
+    margin: 0 20px;
+  }
+  
+  .win-title {
+    font-size: 36px;
+  }
+  
+  .win-subtitle {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .timeline {
+    gap: 10px;
+    top: 5px;
+  }
+  
+  .timeline-dot {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .timeline-label {
+    font-size: 8px;
+  }
+  
+  .timeline-line {
+    width: 15px;
+    height: 2px;
+  }
+  
+  .info-panel {
+    left: 5px;
+    top: 50px;
+    padding: 10px;
+    min-width: 130px;
+  }
+  
+  .info-title {
+    font-size: 11px;
+  }
+  
+  .info-row {
+    font-size: 10px;
+  }
+  
+  .distance-large {
+    font-size: 24px;
+  }
+  
+  .distance-unit {
+    font-size: 12px;
+  }
+  
+  .controls {
+    right: 5px;
+    gap: 8px;
+  }
+  
+  .control-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+  
+  .bottom-nav {
+    bottom: 10px;
+    padding: 6px 12px;
+    gap: 8px;
+  }
+  
+  .nav-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .island-device-1 {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .island-device-2 {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .device-icon {
+    font-size: 24px;
+  }
+  
+  .decorative-island {
+    transform: scale(0.6);
+  }
+  
+  .tree {
+    font-size: 14px;
+  }
+  
+  .xlarge-island {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .large-island {
+    width: 90px;
+    height: 90px;
+  }
+  
+  .medium-island {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .small-island {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .snowflake {
+    font-size: 14px;
+  }
+  
+  .ice-crystal {
+    font-size: 12px;
+  }
+  
+  .start-button {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+  
+  .win-message {
+    padding: 24px;
+    margin: 0 15px;
+  }
+  
+  .win-title {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+  
+  .win-subtitle {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .timeline {
+    gap: 60px;
+  }
+  
+  .timeline-dot {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .timeline-label {
+    font-size: 14px;
+  }
+  
+  .info-panel {
+    padding: 24px;
+    min-width: 250px;
+  }
+  
+  .distance-large {
+    font-size: 42px;
+  }
+  
+  .control-btn {
+    width: 64px;
+    height: 64px;
+    font-size: 28px;
+  }
+  
+  .island-device-1 {
+    width: 140px;
+    height: 140px;
+  }
+  
+  .island-device-2 {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .device-icon {
+    font-size: 42px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .timeline {
+    top: 5px;
+    gap: 15px;
+  }
+  
+  .info-panel {
+    top: 40px;
+    padding: 10px;
+  }
+  
+  .controls {
+    gap: 10px;
+  }
+  
+  .control-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+  
+  .bottom-nav {
+    bottom: 10px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Timeline at top -->
+<div class="timeline">
+  <div class="timeline-item">
+    <div class="timeline-dot" id="step-1"></div>
+    <div class="timeline-label">01</div>
+  </div>
+  <div class="timeline-line"></div>
+  <div class="timeline-item">
+    <div class="timeline-dot" id="step-2"></div>
+    <div class="timeline-label">02</div>
+  </div>
+  <div class="timeline-line"></div>
+  <div class="timeline-item">
+    <div class="timeline-dot active" id="step-3"></div>
+    <div class="timeline-label">03</div>
+  </div>
+  <div class="timeline-line"></div>
+  <div class="timeline-item">
+    <div class="timeline-dot" id="step-4"></div>
+    <div class="timeline-label">04</div>
+  </div>
+</div>
+
+<!-- Control buttons on right -->
+<div class="controls">
+  <button class="control-btn" onclick="zoomOut()" title="Zoom out">−</button>
+  <button class="control-btn" onclick="zoomIn()" title="Zoom in">+</button>
+  <button class="control-btn" onclick="resetView()" title="Reset">↻</button>
+</div>
+
+<!-- Info panel -->
+<div class="info-panel">
+  <div class="info-title">Détection BLE</div>
+  <div class="distance-large">
+    <span id="distance-display">--</span><span class="distance-unit">m</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Signal RSSI:</span>
+    <span class="info-value" id="rssi-display">-- dBm</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Qualité:</span>
+    <span class="info-value" id="quality-display">--</span>
+  </div>
+  <div class="status-badge" id="status-badge">En attente</div>
+</div>
+
+<!-- Bottom navigation -->
+<div class="bottom-nav">
+  <button class="nav-btn" onclick="prevView()">‹</button>
+  <span style="color: white; font-size: 14px; font-weight: 600;">Cache-cache BLE</span>
+  <button class="nav-btn" onclick="nextView()">›</button>
+</div>
+
+<!-- Map with islands -->
+<div class="map-container" id="map">
+  <!-- Snowflakes falling -->
+  <div class="snowflake" style="left: 10%; animation-duration: 8s; animation-delay: 0s;">❄</div>
+  <div class="snowflake" style="left: 20%; animation-duration: 10s; animation-delay: 2s;">❄</div>
+  <div class="snowflake" style="left: 30%; animation-duration: 12s; animation-delay: 4s;">❅</div>
+  <div class="snowflake" style="left: 40%; animation-duration: 9s; animation-delay: 1s;">❄</div>
+  <div class="snowflake" style="left: 50%; animation-duration: 11s; animation-delay: 3s;">❅</div>
+  <div class="snowflake" style="left: 60%; animation-duration: 10s; animation-delay: 5s;">❄</div>
+  <div class="snowflake" style="left: 70%; animation-duration: 13s; animation-delay: 2s;">❄</div>
+  <div class="snowflake" style="left: 80%; animation-duration: 9s; animation-delay: 6s;">❅</div>
+  <div class="snowflake" style="left: 90%; animation-duration: 11s; animation-delay: 4s;">❄</div>
+  <div class="snowflake" style="left: 15%; animation-duration: 10s; animation-delay: 7s;">❅</div>
+  <div class="snowflake" style="left: 85%; animation-duration: 12s; animation-delay: 1s;">❄</div>
+  
+  <!-- Clouds -->
+  <div class="cloud cloud-1"></div>
+  <div class="cloud cloud-2"></div>
+  
+  <!-- Ice crystals scattered on map -->
+  <div class="ice-crystal" style="left: 12%; top: 20%;">❄</div>
+  <div class="ice-crystal" style="right: 18%; top: 25%;">❅</div>
+  <div class="ice-crystal" style="left: 35%; top: 45%;">❄</div>
+  <div class="ice-crystal" style="right: 25%; bottom: 30%;">❅</div>
+  <div class="ice-crystal" style="left: 70%; top: 55%;">❄</div>
+  <div class="ice-crystal" style="left: 22%; bottom: 25%;">❅</div>
+  
+  <!-- Ancient ruins - top left -->
+  <div class="decorative-island xlarge-island" style="left: 10%; top: 15%;">
+    <svg width="40" height="40" viewBox="0 0 40 40">
+      <rect x="5" y="15" width="10" height="20" fill="#8B7355" opacity="0.8"/>
+      <rect x="25" y="10" width="10" height="25" fill="#8B7355" opacity="0.7"/>
+      <path d="M 0 25 L 40 25 L 38 35 L 2 35 Z" fill="#4A7C59" opacity="0.6"/>
+      <!-- Snow on ruins -->
+      <ellipse cx="10" cy="15" rx="6" ry="3" fill="var(--snow-white)"/>
+      <ellipse cx="30" cy="10" rx="6" ry="3" fill="var(--snow-white)"/>
+    </svg>
+    <svg width="30" height="35" viewBox="0 0 30 35">
+      <path d="M 5 15 Q 5 5 15 5 Q 25 5 25 15 L 25 25 L 5 25 Z" fill="#6B5344" opacity="0.6"/>
+      <circle cx="15" cy="12" r="3" fill="#4A4A4A"/>
+      <ellipse cx="15" cy="5" rx="8" ry="3" fill="var(--snow-white)"/>
+    </svg>
+    <svg width="35" height="40" viewBox="0 0 35 40">
+      <polygon points="5,35 10,5 25,5 30,35" fill="#7A6952" opacity="0.7"/>
+      <rect x="12" y="15" width="6" height="10" fill="#3A3A3A"/>
+      <ellipse cx="17.5" cy="5" rx="10" ry="3" fill="var(--snow-white)"/>
+    </svg>
+    <!-- Pine tree with snow -->
+    <svg width="25" height="35" viewBox="0 0 25 35">
+      <polygon points="12.5,2 8,12 17,12" fill="#2F5233"/>
+      <polygon points="12.5,8 7,18 18,18" fill="#3A6B3F"/>
+      <polygon points="12.5,14 5,26 20,26" fill="#4A7C59"/>
+      <rect x="10" y="26" width="5" height="9" fill="#6B4423"/>
+      <!-- Snow on pine -->
+      <ellipse cx="12.5" cy="12" rx="5" ry="2" fill="var(--snow-white)" opacity="0.9"/>
+      <ellipse cx="12.5" cy="18" rx="6" ry="2" fill="var(--snow-white)" opacity="0.9"/>
+      <ellipse cx="12.5" cy="26" rx="8" ry="2" fill="var(--snow-white)" opacity="0.9"/>
+      <!-- Red berries -->
+      <circle cx="8" cy="20" r="1.5" fill="var(--berry-red)"/>
+      <circle cx="17" cy="22" r="1.5" fill="var(--berry-red)"/>
+    </svg>
+    <svg width="20" height="25" viewBox="0 0 20 25">
+      <ellipse cx="10" cy="15" rx="8" ry="10" fill="#5C8A4D"/>
+      <ellipse cx="10" cy="8" rx="6" ry="8" fill="#6B9B5C"/>
+      <rect x="8" y="20" width="4" height="5" fill="#8B6F47"/>
+      <ellipse cx="10" cy="8" rx="7" ry="3" fill="var(--snow-white)" opacity="0.8"/>
+    </svg>
+  </div>
+  
+  <!-- Stone formation - top center -->
+  <div class="decorative-island large-island" style="left: 40%; top: 10%;">
+    <svg width="35" height="30" viewBox="0 0 35 30">
+      <ellipse cx="17.5" cy="20" rx="15" ry="8" fill="#7A8B8B" opacity="0.8"/>
+      <ellipse cx="17.5" cy="15" rx="12" ry="10" fill="#8B9A9A"/>
+      <path d="M 10 18 Q 5 15 8 10 Q 12 5 17.5 8 Q 23 5 27 10 Q 30 15 25 18" fill="#5A6A6A"/>
+      <ellipse cx="17.5" cy="5" rx="10" ry="4" fill="var(--snow-white)"/>
+    </svg>
+    <svg width="20" height="25" viewBox="0 0 20 25">
+      <ellipse cx="10" cy="12" rx="6" ry="8" fill="#5C8A4D"/>
+      <ellipse cx="10" cy="7" rx="5" ry="6" fill="#6B9B5C"/>
+      <rect x="8" y="16" width="4" height="5" fill="#8B6F47"/>
+      <ellipse cx="10" cy="7" rx="5.5" ry="2" fill="var(--snow-white)" opacity="0.8"/>
+    </svg>
+    <!-- Berries cluster -->
+    <g>
+      <circle cx="15" cy="15" r="1.2" fill="var(--berry-red)"/>
+      <circle cx="18" cy="16" r="1.2" fill="var(--berry-red)"/>
+      <circle cx="16.5" cy="18" r="1.2" fill="var(--berry-red)"/>
+    </g>
+  </div>
+  
+  <!-- Small mossy rock - top right -->
+  <div class="decorative-island medium-island" style="right: 15%; top: 12%;">
+    <svg width="30" height="25" viewBox="0 0 30 25">
+      <ellipse cx="15" cy="18" rx="12" ry="6" fill="#6B7A6B"/>
+      <ellipse cx="15" cy="12" rx="10" ry="8" fill="#7A8B7A"/>
+      <path d="M 8 12 L 15 5 L 22 12" fill="#8B9A8B"/>
+      <ellipse cx="15" cy="5" rx="8" ry="3" fill="var(--snow-white)"/>
+    </svg>
+    <svg width="18" height="22" viewBox="0 0 18 22">
+      <polygon points="9,1 6,10 12,10" fill="#2F5233"/>
+      <polygon points="9,6 5,14 13,14" fill="#3A6B3F"/>
+      <polygon points="9,10 3,20 15,20" fill="#4A7C59"/>
+      <rect x="7.5" y="18" width="3" height="4" fill="#6B4423"/>
+      <ellipse cx="9" cy="20" rx="6" ry="1.5" fill="var(--snow-white)" opacity="0.9"/>
+    </svg>
+  </div>
+  
+  <!-- Fallen log - left middle -->
+  <div class="decorative-island large-island" style="left: 5%; top: 45%;">
+    <svg width="50" height="20" viewBox="0 0 50 20">
+      <ellipse cx="25" cy="10" rx="23" ry="8" fill="#8B7355" opacity="0.9"/>
+      <rect x="2" y="6" width="46" height="8" fill="#A0826D" rx="4"/>
+      <line x1="5" y1="6" x2="5" y2="14" stroke="#6B5344" stroke-width="1"/>
+      <line x1="15" y1="6" x2="15" y2="14" stroke="#6B5344" stroke-width="1"/>
+      <line x1="25" y1="6" x2="25" y2="14" stroke="#6B5344" stroke-width="1"/>
+      <line x1="35" y1="6" x2="35" y2="14" stroke="#6B5344" stroke-width="1"/>
+      <line x1="45" y1="6" x2="45" y2="14" stroke="#6B5344" stroke-width="1"/>
+      <ellipse cx="25" cy="6" rx="20" ry="3" fill="var(--snow-white)" opacity="0.7"/>
+    </svg>
+    <svg width="15" height="20" viewBox="0 0 15 20">
+      <ellipse cx="7.5" cy="12" rx="6" ry="8" fill="#5C8A4D"/>
+      <ellipse cx="7.5" cy="7" rx="5" ry="6" fill="#6B9B5C"/>
+      <rect x="6" y="16" width="3" height="4" fill="#8B6F47"/>
+      <ellipse cx="7.5" cy="7" rx="5.5" ry="2" fill="var(--snow-white)" opacity="0.8"/>
+      <circle cx="5" cy="10" r="1" fill="var(--berry-red)"/>
+      <circle cx="10" cy="11" r="1" fill="var(--berry-red)"/>
+    </svg>
+  </div>
+  
+  <!-- Wild grass cluster - right middle -->
+  <div class="decorative-island small-island" style="right: 10%; top: 40%;">
+    <svg width="20" height="25" viewBox="0 0 20 25">
+      <path d="M 15 25 Q 14 20 12 15 Q 10 10 8 5" stroke="#4A7C59" stroke-width="2" fill="none"/>
+      <path d="M 15 25 Q 15 15 15 5" stroke="#5C8A4D" stroke-width="2.5" fill="none"/>
+      <path d="M 15 25 Q 16 20 18 15 Q 20 10 22 5" stroke="#4A7C59" stroke-width="2" fill="none"/>
+      <path d="M 8 10 Q 4 10 2 8" stroke="#5C8A4D" stroke-width="1.5" fill="none"/>
+      <path d="M 22 10 Q 26 10 28 8" stroke="#5C8A4D" stroke-width="1.5" fill="none"/>
+      <ellipse cx="15" cy="24" rx="10" ry="2" fill="var(--snow-white)" opacity="0.5"/>
+    </svg>
+  </div>
+  
+  <!-- Ancient temple ruins - bottom left -->
+  <div class="decorative-island xlarge-island" style="left: 8%; bottom: 12%;">
+    <svg width="45" height="40" viewBox="0 0 45 40">
+      <polygon points="22.5,5 5,15 40,15" fill="#8B7355" opacity="0.7"/>
+      <rect x="8" y="15" width="8" height="20" fill="#A0826D" opacity="0.8"/>
+      <rect x="18" y="15" width="9" height="25" fill="#A0826D" opacity="0.9"/>
+      <rect x="29" y="15" width="8" height="18" fill="#A0826D" opacity="0.7"/>
+      <ellipse cx="22.5" cy="5" rx="15" ry="3" fill="var(--snow-white)"/>
+    </svg>
+    <svg width="30" height="35" viewBox="0 0 30 35">
+      <ellipse cx="15" cy="25" rx="12" ry="8" fill="#7A8B7A"/>
+      <ellipse cx="15" cy="18" rx="10" ry="10" fill="#8B9A8B"/>
+      <path d="M 8 18 L 15 8 L 22 18" fill="#9BABA9"/>
+      <ellipse cx="15" cy="8" rx="9" ry="3" fill="var(--snow-white)"/>
+    </svg>
+    <svg width="25" height="35" viewBox="0 0 25 35">
+      <polygon points="12.5,2 8,12 17,12" fill="#2F5233"/>
+      <polygon points="12.5,8 7,18 18,18" fill="#3A6B3F"/>
+      <polygon points="12.5,14 5,26 20,26" fill="#4A7C59"/>
+      <rect x="10" y="26" width="5" height="9" fill="#6B4423"/>
+      <ellipse cx="12.5" cy="12" rx="5" ry="2" fill="var(--snow-white)" opacity="0.9"/>
+      <ellipse cx="12.5" cy="18" rx="6" ry="2" fill="var(--snow-white)" opacity="0.9"/>
+      <ellipse cx="12.5" cy="26" rx="8" ry="2" fill="var(--snow-white)" opacity="0.9"/>
+    </svg>
+    <svg width="22" height="28" viewBox="0 0 22 28">
+      <ellipse cx="11" cy="18" rx="9" ry="10" fill="#5C8A4D"/>
+      <ellipse cx="11" cy="10" rx="7" ry="8" fill="#6B9B5C"/>
+      <rect x="9" y="23" width="4" height="5" fill="#8B6F47"/>
+      <ellipse cx="11" cy="10" rx="8" ry="3" fill="var(--snow-white)" opacity="0.8"/>
+      <circle cx="7" cy="14" r="1.2" fill="var(--berry-red)"/>
+      <circle cx="15" cy="15" r="1.2" fill="var(--berry-red)"/>
+      <circle cx="11" cy="17" r="1.2" fill="var(--berry-red)"/>
+    </svg>
+  </div>
+  
+  <!-- Mushroom cluster - bottom center -->
+  <div class="decorative-island medium-island" style="left: 45%; bottom: 20%;">
+    <svg width="20" height="20" viewBox="0 0 20 20">
+      <ellipse cx="10" cy="18" rx="4" ry="2" fill="#E8D4B8"/>
+      <rect x="8" y="12" width="4" height="6" fill="#F5E6D3"/>
+      <ellipse cx="10" cy="8" rx="7" ry="5" fill="#C44536"/>
+      <circle cx="6" cy="8" r="1.5" fill="#FFFFFF" opacity="0.7"/>
+      <circle cx="12" cy="9" r="1.2" fill="#FFFFFF" opacity="0.7"/>
+      <ellipse cx="10" cy="8" rx="7" ry="2" fill="var(--snow-white)" opacity="0.5"/>
+    </svg>
+    <svg width="15" height="16" viewBox="0 0 15 16">
+      <ellipse cx="7.5" cy="15" rx="3" ry="1.5" fill="#E8D4B8"/>
+      <rect x="6" y="10" width="3" height="5" fill="#F5E6D3"/>
+      <ellipse cx="7.5" cy="7" rx="5" ry="4" fill="#8B6F47"/>
+      <circle cx="5" cy="7" r="1" fill="#FFFFFF" opacity="0.6"/>
+      <circle cx="10" cy="8" r="0.8" fill="#FFFFFF" opacity="0.6"/>
+    </svg>
+    <svg width="18" height="15" viewBox="0 0 18 15">
+      <polygon points="9,1 6,10 12,10" fill="#2F5233"/>
+      <polygon points="9,6 5,14 13,14" fill="#3A6B3F"/>
+      <polygon points="9,10 3,20 15,20" fill="#4A7C59"/>
+      <rect x="7.5" y="18" width="3" height="4" fill="#6B4423"/>
+      <ellipse cx="9" cy="10" rx="5" ry="1.5" fill="var(--snow-white)" opacity="0.9"/>
+    </svg>
+  </div>
+  
+  <!-- Rocky outcrop - bottom right -->
+  <div class="decorative-island large-island" style="right: 12%; bottom: 15%;">
+    <svg width="38" height="32" viewBox="0 0 38 32">
+      <ellipse cx="19" cy="24" rx="17" ry="7" fill="#6B7A6B"/>
+      <polygon points="19,8 10,20 28,20" fill="#7A8B8B"/>
+      <polygon points="19,12 14,22 24,22" fill="#8B9A8B"/>
+      <ellipse cx="19" cy="8" rx="12" ry="3" fill="var(--snow-white)"/>
+    </svg>
+    <svg width="15" height="20" viewBox="0 0 15 20">
+      <ellipse cx="7.5" cy="12" rx="6" ry="8" fill="#5C8A4D"/>
+      <ellipse cx="7.5" cy="7" rx="5" ry="6" fill="#6B9B5C"/>
+      <rect x="6" y="16" width="3" height="4" fill="#8B6F47"/>
+      <ellipse cx="7.5" cy="7" rx="5.5" ry="2" fill="var(--snow-white)" opacity="0.8"/>
+    </svg>
+    <svg width="12" height="15" viewBox="0 0 12 15">
+      <path d="M 3 15 Q 2 10 4 7 Q 6 4 6 1" stroke="#4A7C59" stroke-width="1.5" fill="none"/>
+      <path d="M 6 15 Q 6 8 6 3" stroke="#5C8A4D" stroke-width="1.5" fill="none"/>
+      <path d="M 9 15 Q 10 10 8 7 Q 6 4 6 1" stroke="#4A7C59" stroke-width="1.5" fill="none"/>
+    </svg>
+  </div>
+  
+  <!-- Scattered elements -->
+  <div class="decorative-island small-island" style="left: 30%; top: 30%;">
+    <svg width="18" height="22" viewBox="0 0 18 22">
+      <polygon points="9,1 6,10 12,10" fill="#2F5233"/>
+      <polygon points="9,6 5,14 13,14" fill="#3A6B3F"/>
+      <polygon points="9,10 3,20 15,20" fill="#4A7C59"/>
+      <rect x="7.5" y="18" width="3" height="4" fill="#6B4423"/>
+      <ellipse cx="9" cy="20" rx="6" ry="1.5" fill="var(--snow-white)" opacity="0.9"/>
+      <circle cx="6" cy="12" r="1" fill="var(--berry-red)"/>
+      <circle cx="12" cy="13" r="1" fill="var(--berry-red)"/>
+    </svg>
+  </div>
+  
+  <div class="decorative-island small-island" style="right: 35%; top: 50%;">
+    <svg width="20" height="18" viewBox="0 0 20 18">
+      <ellipse cx="10" cy="15" rx="3" ry="1.5" fill="#E8D4B8"/>
+      <rect x="8" y="10" width="4" height="5" fill="#F5E6D3"/>
+      <ellipse cx="10" cy="7" rx="6" ry="4" fill="#B85C42"/>
+      <circle cx="7" cy="7" r="1.2" fill="#FFFFFF" opacity="0.7"/>
+      <circle cx="13" cy="8" r="1" fill="#FFFFFF" opacity="0.7"/>
+    </svg>
+  </div>
+  
+  <div class="decorative-island small-island" style="left: 25%; bottom: 35%;">
+    <svg width="15" height="20" viewBox="0 0 15 20">
+      <ellipse cx="7.5" cy="12" rx="6" ry="8" fill="#5C8A4D"/>
+      <ellipse cx="7.5" cy="7" rx="5" ry="6" fill="#6B9B5C"/>
+      <rect x="6" y="16" width="3" height="4" fill="#8B6F47"/>
+      <ellipse cx="7.5" cy="7" rx="5.5" ry="2" fill="var(--snow-white)" opacity="0.8"/>
+    </svg>
+  </div>
+  
+  <div class="decorative-island medium-island" style="right: 30%; bottom: 40%;">
+    <svg width="25" height="22" viewBox="0 0 25 22">
+      <ellipse cx="12.5" cy="18" rx="10" ry="3" fill="#8B7355"/>
+      <path d="M 5 16 Q 3 12 5 8 Q 8 4 12.5 6 Q 17 4 20 8 Q 22 12 20 16" fill="#A0826D"/>
+      <ellipse cx="12.5" cy="6" rx="9" ry="3" fill="var(--snow-white)" opacity="0.7"/>
+    </svg>
+    <svg width="18" height="22" viewBox="0 0 18 22">
+      <polygon points="9,1 6,10 12,10" fill="#2F5233"/>
+      <polygon points="9,6 5,14 13,14" fill="#3A6B3F"/>
+      <polygon points="9,10 3,20 15,20" fill="#4A7C59"/>
+      <rect x="7.5" y="18" width="3" height="4" fill="#6B4423"/>
+      <ellipse cx="9" cy="10" rx="5" ry="1.5" fill="var(--snow-white)" opacity="0.9"/>
+      <ellipse cx="9" cy="20" rx="6" ry="1.5" fill="var(--snow-white)" opacity="0.9"/>
+    </svg>
+  </div>
+  
+  <!-- Dense ferns - mid left -->
+  <div class="decorative-island large-island" style="left: 15%; top: 65%;">
+    <svg width="30" height="25" viewBox="0 0 30 25">
+      <path d="M 15 25 Q 14 20 12 15 Q 10 10 8 5" stroke="#4A7C59" stroke-width="2" fill="none"/>
+      <path d="M 15 25 Q 15 15 15 5" stroke="#5C8A4D" stroke-width="2.5" fill="none"/>
+      <path d="M 15 25 Q 16 20 18 15 Q 20 10 22 5" stroke="#4A7C59" stroke-width="2" fill="none"/>
+      <path d="M 8 10 Q 4 10 2 8" stroke="#5C8A4D" stroke-width="1.5" fill="none"/>
+      <path d="M 22 10 Q 26 10 28 8" stroke="#5C8A4D" stroke-width="1.5" fill="none"/>
+      <ellipse cx="15" cy="24" rx="10" ry="2" fill="var(--snow-white)" opacity="0.5"/>
+    </svg>
+    <svg width="20" height="18" viewBox="0 0 20 18">
+      <ellipse cx="10" cy="15" rx="3" ry="1.5" fill="#E8D4B8"/>
+      <rect x="8" y="10" width="4" height="5" fill="#F5E6D3"/>
+      <ellipse cx="10" cy="7" rx="6" ry="4" fill="#B85C42"/>
+      <circle cx="7" cy="7" r="1.2" fill="#FFFFFF" opacity="0.7"/>
+      <circle cx="13" cy="8" r="1" fill="#FFFFFF" opacity="0.7"/>
+    </svg>
+    <svg width="18" height="22" viewBox="0 0 18 22">
+      <polygon points="9,1 6,10 12,10" fill="#2F5233"/>
+      <polygon points="9,6 5,14 13,14" fill="#3A6B3F"/>
+      <polygon points="9,10 3,20 15,20" fill="#4A7C59"/>
+      <rect x="7.5" y="18" width="3" height="4" fill="#6B4423"/>
+      <ellipse cx="9" cy="10" rx="5" ry="1.5" fill="var(--snow-white)" opacity="0.9"/>
+      <ellipse cx="9" cy="20" rx="6" ry="1.5" fill="var(--snow-white)" opacity="0.9"/>
+      <circle cx="5" cy="13" r="1.2" fill="var(--berry-red)"/>
+      <circle cx="13" cy="14" r="1.2" fill="var(--berry-red)"/>
+      <circle cx="9" cy="16" r="1.2" fill="var(--berry-red)"/>
+    </svg>
+  </div>
+  
+  <!-- Hollow log - mid right -->
+  <div class="decorative-island large-island" style="right: 20%; top: 60%;">
+    <svg width="45" height="25" viewBox="0 0 45 25">
+      <ellipse cx="22.5" cy="12" rx="20" ry="10" fill="#8B7355" opacity="0.9"/>
+      <ellipse cx="22.5" cy="12" rx="18" ry="8" fill="#A0826D"/>
+      <ellipse cx="22.5" cy="12" rx="10" ry="5" fill="#4A4A4A" opacity="0.5"/>
+      <line x1="8" y1="8" x2="8" y2="16" stroke="#6B5344" stroke-width="1.5"/>
+      <line x1="18" y1="6" x2="18" y2="18" stroke="#6B5344" stroke-width="1.5"/>
+      <line x1="28" y1="6" x2="28" y2="18" stroke="#6B5344" stroke-width="1.5"/>
+      <line x1="37" y1="8" x2="37" y2="16" stroke="#6B5344" stroke-width="1.5"/>
+      <ellipse cx="22.5" cy="7" rx="18" ry="3" fill="var(--snow-white)" opacity="0.7"/>
+    </svg>
+    <svg width="22" height="28" viewBox="0 0 22 28">
+      <ellipse cx="11" cy="18" rx="9" ry="10" fill="#5C8A4D"/>
+      <ellipse cx="11" cy="10" rx="7" ry="8" fill="#6B9B5C"/>
+      <rect x="9" y="23" width="4" height="5" fill="#8B6F47"/>
+      <ellipse cx="11" cy="10" rx="8" ry="3" fill="var(--snow-white)" opacity="0.8"/>
+    </svg>
+    <svg width="18" height="15" viewBox="0 0 18 15">
+      <path d="M 4 15 Q 3 10 5 7 Q 7 4 9 2" stroke="#4A7C59" stroke-width="2" fill="none"/>
+      <path d="M 9 15 Q 9 10 9 4" stroke="#5C8A4D" stroke-width="2" fill="none"/>
+      <path d="M 14 15 Q 15 10 13 7 Q 11 4 9 2" stroke="#4A7C59" stroke-width="2" fill="none"/>
+    </svg>
+  </div>
+  
+  <!-- Extra scattered trees for more nature -->
+  <div class="tree" style="left: 15%; top: 25%;">
+    <svg width="20" height="30" viewBox="0 0 20 30">
+      <polygon points="10,1 7,10 13,10" fill="#2F5233"/>
+      <polygon points="10,6 6,14 14,14" fill="#3A6B3F"/>
+      <polygon points="10,11 4,22 16,22" fill="#4A7C59"/>
+      <rect x="8.5" y="22" width="3" height="8" fill="#6B4423"/>
+      <ellipse cx="10" cy="10" rx="4" ry="2" fill="var(--snow-white)" opacity="0.9"/>
+      <ellipse cx="10" cy="22" rx="6" ry="2" fill="var(--snow-white)" opacity="0.9"/>
+      <circle cx="7" cy="15" r="1" fill="var(--berry-red)"/>
+      <circle cx="13" cy="16" r="1" fill="var(--berry-red)"/>
+    </svg>
+  </div>
+  <div class="tree" style="left: 80%; top: 35%;">
+    <svg width="22" height="28" viewBox="0 0 22 28">
+      <ellipse cx="11" cy="18" rx="9" ry="10" fill="#5C8A4D"/>
+      <ellipse cx="11" cy="10" rx="7" ry="8" fill="#6B9B5C"/>
+      <rect x="9" y="23" width="4" height="5" fill="#8B6F47"/>
+      <ellipse cx="11" cy="10" rx="8" ry="3" fill="var(--snow-white)" opacity="0.8"/>
+      <circle cx="8" cy="14" r="1.2" fill="var(--berry-red)"/>
+      <circle cx="14" cy="15" r="1.2" fill="var(--berry-red)"/>
+    </svg>
+  </div>
+  <div class="tree" style="right: 25%; bottom: 28%;">
+    <svg width="20" height="30" viewBox="0 0 20 30">
+      <polygon points="10,1 7,10 13,10" fill="#2F5233"/>
+      <polygon points="10,6 6,14 14,14" fill="#3A6B3F"/>
+      <polygon points="10,11 4,22 16,22" fill="#4A7C59"/>
+      <rect x="8.5" y="22" width="3" height="8" fill="#6B4423"/>
+      <ellipse cx="10" cy="10" rx="4" ry="2" fill="var(--snow-white)" opacity="0.9"/>
+      <ellipse cx="10" cy="14" rx="5" ry="2" fill="var(--snow-white)" opacity="0.9"/>
+      <ellipse cx="10" cy="22" rx="6" ry="2" fill="var(--snow-white)" opacity="0.9"/>
+    </svg>
+  </div>
+  <div class="tree" style="left: 55%; top: 70%;">
+    <svg width="18" height="25" viewBox="0 0 18 25">
+      <ellipse cx="9" cy="16" rx="7" ry="9" fill="#5C8A4D"/>
+      <ellipse cx="9" cy="9" rx="6" ry="7" fill="#6B9B5C"/>
+      <rect x="7.5" y="21" width="3" height="4" fill="#8B6F47"/>
+      <ellipse cx="9" cy="9" rx="6.5" ry="2.5" fill="var(--snow-white)" opacity="0.8"/>
+      <circle cx="6" cy="12" r="1" fill="var(--berry-red)"/>
+      <circle cx="12" cy="13" r="1" fill="var(--berry-red)"/>
+      <circle cx="9" cy="15" r="1" fill="var(--berry-red)"/>
+    </svg>
+  </div>
+  
+  <!-- Device islands -->
+  <div class="island island-device-1" id="device1Island">
+    <svg width="60" height="60" viewBox="0 0 60 60" class="device-icon">
+      <circle cx="30" cy="30" r="25" fill="#4A90E2" opacity="0.9"/>
+      <circle cx="30" cy="30" r="20" fill="#5DADE2"/>
+      <circle cx="30" cy="30" r="12" fill="#FFFFFF"/>
+      <path d="M 30 18 L 30 24" stroke="#4A90E2" stroke-width="2" stroke-linecap="round"/>
+      <path d="M 30 36 L 30 42" stroke="#4A90E2" stroke-width="2" stroke-linecap="round"/>
+      <path d="M 18 30 L 24 30" stroke="#4A90E2" stroke-width="2" stroke-linecap="round"/>
+      <path d="M 36 30 L 42 30" stroke="#4A90E2" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </div>
+  
+  <div class="island island-device-2" id="device2Island">
+    <svg width="50" height="50" viewBox="0 0 50 50" class="device-icon">
+      <circle cx="25" cy="25" r="20" fill="#7ED957" opacity="0.9"/>
+      <circle cx="25" cy="25" r="16" fill="#8FE66D"/>
+      <circle cx="25" cy="25" r="10" fill="#FFFFFF"/>
+      <circle cx="25" cy="25" r="4" fill="#7ED957"/>
+    </svg>
+  </div>
+  
+  <!-- Connection line -->
+  <div class="connection-line" id="connectionLine"></div>
+</div>
+
+<button class="start-button" id="start-btn" onclick="connect()">
+  🎯 Démarrer la recherche
+</button>
+
+<script>
+let device;
+let filteredRSSI = -100;
+let beepTimer = null;
+let winTimer = 0;
+let currentZoom = 1;
+
+let audioContext = null;
+let masterGainNode = null;
+
+function initAudioContext() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    masterGainNode = audioContext.createGain();
+    masterGainNode.connect(audioContext.destination);
+    masterGainNode.gain.value = 0.3;
+  }
+  // Reprendre le contexte audio s'il est suspendu
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+}
+
+// Configuration
+const RSSI_MIN = -90;
+const RSSI_MAX = -45;
+const WIN_RSSI = -55;
+const WIN_TIME = 1500;
+const SMOOTHING = 0.3;
+const TX_POWER = -59;
+const PATH_LOSS = 2.5;
+
+let startTime = Date.now(); // Initialize startTime
+
+function calculateDistance(rssi) {
+  if (rssi >= 0) return 0;
+  const ratio = (TX_POWER - rssi) / (10 * PATH_LOSS);
+  const distance = Math.pow(10, ratio);
+  return Math.min(distance, 50);
+}
+
+async function connect() {
+  try {
+    device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true
+    });
+
+    document.getElementById("start-btn").style.display = "none";
+    updateStatus("Recherche active", "#4A90E2");
+    updateTimeline(1);
+
+    await device.watchAdvertisements();
+    device.addEventListener("advertisementreceived", onAd);
+    
+    startTime = Date.now(); // Reset startTime when connection starts
+  } catch (error) {
+    updateStatus("Erreur: " + error.message, "#E74C3C");
+    console.error("[v0] BLE error:", error);
+  }
+}
+
+function onAd(event) {
+  const rssi = event.rssi;
+  filteredRSSI += SMOOTHING * (rssi - filteredRSSI);
+  updateGame(filteredRSSI);
+}
+
+function updateGame(rssi) {
+  const distance = calculateDistance(rssi);
+  const ratio = clamp((rssi - RSSI_MIN) / (RSSI_MAX - RSSI_MIN), 0, 1);
+  
+  document.getElementById("distance-display").textContent = distance.toFixed(1);
+  document.getElementById("rssi-display").textContent = rssi.toFixed(0) + " dBm";
+  
+  let quality, color, badgeColor;
+  if (ratio > 0.7) {
+    quality = "Excellent";
+    color = "#7ED957";
+    badgeColor = "#7ED957";
+  } else if (ratio > 0.4) {
+    quality = "Bon";
+    color = "#FFD700";
+    badgeColor = "#FFA500";
+  } else if (ratio > 0.2) {
+    quality = "Moyen";
+    color = "#FF9500";
+    badgeColor = "#FF6B6B";
+  } else {
+    quality = "Faible";
+    color = "#E74C3C";
+    badgeColor = "#E74C3C";
+  }
+  
+  document.getElementById("quality-display").textContent = quality;
+  document.getElementById("quality-display").style.color = color;
+  
+  const badge = document.getElementById("status-badge");
+  badge.style.background = badgeColor + "22";
+  badge.style.color = badgeColor;
+  badge.style.border = `2px solid ${badgeColor}`;
+  badge.textContent = quality;
+  
+  updateDevicePosition(distance, ratio);
+  
+  // Update beep
+  updateBeep(ratio);
+  
+  if (ratio > 0.6) updateTimeline(3);
+  else if (ratio > 0.3) updateTimeline(2);
+  else updateTimeline(1);
+  
+  // Check win condition
+  if (rssi > WIN_RSSI) {
+    winTimer += 100;
+    if (winTimer >= WIN_TIME) {
+      showVictory(); // Changed from win() to showVictory()
+    }
+  } else {
+    winTimer = 0;
+  }
+}
+
+function updateDevicePosition(distance, ratio) {
+  const device1 = document.getElementById("device1Island");
+  const device2 = document.getElementById("device2Island");
+  const line = document.getElementById("connectionLine");
+  
+  // Get center position
+  const centerX = window.innerWidth / 2;
+  const centerY = window.innerHeight / 2;
+  
+  // Map distance to pixels (max 400px radius)
+  const maxRadius = 400;
+  const minRadius = 50;
+  const pixelDistance = minRadius + (1 - ratio) * (maxRadius - minRadius);
+  
+  // Calculate angle (rotating slowly)
+  const angle = (Date.now() / 3000) % (Math.PI * 2);
+  
+  // Calculate device 2 position
+  const x2 = centerX + pixelDistance * Math.cos(angle);
+  const y2 = centerY + pixelDistance * Math.sin(angle);
+  
+  device2.style.left = `${x2}px`;
+  device2.style.top = `${y2}px`;
+  device2.style.transform = 'translate(-50%, -50%)';
+  
+  // Scale device 2 based on distance (perspective effect)
+  const scale = 0.6 + ratio * 0.4;
+  device2.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  
+  // Update connection line
+  const dx = x2 - centerX;
+  const dy = y2 - centerY;
+  const lineLength = Math.sqrt(dx * dx + dy * dy);
+  const lineAngle = Math.atan2(dy, dx);
+  
+  line.style.width = `${lineLength}px`;
+  line.style.left = `${centerX}px`;
+  line.style.top = `${centerY}px`;
+  line.style.transform = `rotate(${lineAngle}rad)`;
+}
+
+function updateTimeline(step) {
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById(`step-${i}`);
+    if (i <= step) {
+      dot.classList.add('active');
+    } else {
+      dot.classList.remove('active');
+    }
+  }
+}
+
+function updateStatus(message, color) {
+  const badge = document.getElementById("status-badge");
+  badge.textContent = message;
+  badge.style.background = color + "22";
+  badge.style.color = color;
+  badge.style.border = `2px solid ${color}`;
+}
+
+function updateBeep(ratio) {
+  initAudioContext();
+  
+  if (ratio <= 0) {
+    stopBeep();
+    return;
+  }
+  const minInterval = 100;
+  const maxInterval = 3000;
+  const interval = maxInterval - (ratio * (maxInterval - minInterval));
+  startBeep(Math.max(minInterval, Math.min(maxInterval, interval)));
+}
+
+function playBeep(frequency = 800, duration = 100) {
+  try {
+    initAudioContext();
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(masterGainNode);
+    
+    oscillator.frequency.value = frequency;
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration / 1000);
+    
+    // Nettoyer l'oscillateur après utilisation
+    oscillator.onended = () => {
+      oscillator.disconnect();
+      gainNode.disconnect();
+    };
+  } catch (error) {
+    console.error('[v0] Erreur audio:', error);
+  }
+}
+
+let currentBeepInterval = null;
+function startBeep(interval) {
+  if (currentBeepInterval === interval) return;
+  stopBeep();
+  currentBeepInterval = interval;
+  playBeep();
+  beepTimer = setInterval(() => {
+    playBeep();
+  }, interval);
+}
+
+function stopBeep() {
+  if (beepTimer) {
+    clearInterval(beepTimer);
+    beepTimer = null;
+    currentBeepInterval = null;
+  }
+}
+
+function showVictory() {
+  stopBeep();
+  updateTimeline(4);
+  
+  // Animate target device
+  const targetDevice = document.getElementById('device2Island'); // Assuming device2 is the target
+  targetDevice.classList.add('target-found');
+  
+  // Calculate stats
+  const finalDistance = calculateDistance(filteredRSSI);
+  const searchTime = Math.floor((Date.now() - startTime) / 1000);
+  // Placeholder for movementConfidence, as it's not defined in the provided code
+  const movementConfidence = 95; // Example value
+  
+  // Create confetti
+  createConfetti();
+  
+  // Create fireworks
+  setTimeout(() => createFireworks(window.innerWidth / 2, window.innerHeight / 2), 300);
+  setTimeout(() => createFireworks(window.innerWidth / 3, window.innerHeight / 3), 600);
+  setTimeout(() => createFireworks(2 * window.innerWidth / 3, window.innerHeight / 3), 900);
+  
+  // Victory sound (multiple beeps in celebration)
+  const celebrationBeeps = [440, 554, 659, 880];
+  celebrationBeeps.forEach((freq, i) => {
+    setTimeout(() => playBeep(freq, 200), i * 150);
+  });
+  
+  const overlay = document.createElement('div');
+  overlay.className = 'win-overlay';
+  overlay.innerHTML = `
+    <div class="win-message">
+      <div class="win-title">🎉</div>
+      <div class="win-stats">
+        <div class="win-stat">
+          <div style="font-size: 48px; margin-bottom: 20px;">⏱️</div>
+          <div class="win-stat-value">${searchTime}s</div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  
+  if (device) {
+    device.removeEventListener("advertisementreceived", onAd);
+  }
+}
+
+
+function createConfetti() {
+  const colors = ['#7ED957', '#4A90E2', '#FFD700', '#FF6B6B', '#9B59B6'];
+  for (let i = 0; i < 100; i++) {
+    setTimeout(() => {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = Math.random() * window.innerWidth + 'px';
+      confetti.style.top = '-10px';
+      confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.animationDelay = Math.random() * 0.5 + 's';
+      confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+      document.body.appendChild(confetti);
+      
+      setTimeout(() => confetti.remove(), 5000);
+    }, i * 30);
+  }
+}
+
+function createFireworks(x, y) {
+  const colors = ['#7ED957', '#4A90E2', '#FFD700', '#FF6B6B'];
+  const particles = 30;
+  
+  for (let i = 0; i < particles; i++) {
+    const firework = document.createElement('div');
+    firework.className = 'firework';
+    firework.style.left = x + 'px';
+    firework.style.top = y + 'px';
+    firework.style.background = colors[Math.floor(Math.random() * colors.length)];
+    
+    const angle = (Math.PI * 2 * i) / particles;
+    const velocity = 100 + Math.random() * 100;
+    const tx = Math.cos(angle) * velocity;
+    const ty = Math.sin(angle) * velocity;
+    
+    firework.style.setProperty('--tx', tx + 'px');
+    firework.style.setProperty('--ty', ty + 'px');
+    
+    document.body.appendChild(firework);
+    
+    setTimeout(() => firework.remove(), 1000);
+  }
+}
+
+function zoomIn() {
+  currentZoom = Math.min(currentZoom + 0.2, 2);
+  document.getElementById('map').style.transform = `scale(${currentZoom})`;
+}
+
+function zoomOut() {
+  currentZoom = Math.max(currentZoom - 0.2, 0.5);
+  document.getElementById('map').style.transform = `scale(${currentZoom})`;
+}
+
+function resetView() {
+  currentZoom = 1;
+  document.getElementById('map').style.transform = 'scale(1)';
+}
+
+function prevView() {
+  console.log("[v0] Previous view");
+}
+
+function nextView() {
+  console.log("[v0] Next view");
+}
+
+function clamp(v, min, max) {
+  return Math.min(Math.max(v, min), max);
+}
+
+document.addEventListener('click', initAudioContext, { once: false });
+document.addEventListener('touchstart', initAudioContext, { once: false });
+
+setInterval(() => {
+  if (audioContext && audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+}, 1000);
+
+</script>
+
+</body>
+</html>
